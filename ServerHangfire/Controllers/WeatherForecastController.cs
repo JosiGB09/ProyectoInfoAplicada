@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Mvc;
 
 namespace ServerHangfire.Controllers
+//esta vara la hace .NET, se puede borrar
 {
     [ApiController]
     [Route("[controller]")]
