@@ -14,6 +14,7 @@ dotnet add package Hangfire
 dotnet add package Hangfire.SqlServer
 dotnet add package Serilog.AspNetCore
 dotnet add package Confluent.Kafka
+dotnet add package Microsoft.DataSqlClient
 Configurar appsettings.Development.json con tu conexión a SQL Server (LocalDB funciona): 
 /aca realmente creo que no se cambia nada si ya tiene la instancia de sql server
 
