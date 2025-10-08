@@ -96,7 +96,7 @@ namespace PDFServer.Services
                     var content = new MultipartFormDataContent();
                     var fileContent = new StreamContent(memoryStream);
                     fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
-                    content.Add(fileContent, "file", fileName);
+                    content.Add(fileContent, "PDF", fileName);
                     content.Add(new StringContent(correlationId), "correlationId");
                     content.Add(new StringContent(clientId), "clientId");
                     content.Add(new StringContent(generationDate.ToString("o")), "generationDate");
