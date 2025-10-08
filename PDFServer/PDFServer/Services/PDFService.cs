@@ -63,7 +63,7 @@ namespace PDFServer.Services
             await CreateLog(correlationId, fileName);
             try
             {
-                await UploadToStorageAsync(document, fileName);
+                await UploadToStorageAsync(document, fileName, correlationId, customerId.ToString(), DateTime.Now);
             }
             catch (Exception ex)
             {
@@ -85,7 +85,7 @@ namespace PDFServer.Services
             });
 
         }
-        public async Task UploadToStorageAsync(Document pdfFile, string fileName)
+        public async Task UploadToStorageAsync(Document pdfFile, string fileName, string correlationId, string clientId, DateTime generationDate)
         {
             using (var memoryStream = new MemoryStream())
             {
@@ -97,6 +97,10 @@ namespace PDFServer.Services
                     var fileContent = new StreamContent(memoryStream);
                     fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
                     content.Add(fileContent, "file", fileName);
+                    content.Add(new StringContent(correlationId), "correlationId");
+                    content.Add(new StringContent(clientId), "clientId");
+                    content.Add(new StringContent(generationDate.ToString("o")), "generationDate");
+                    content.Add(new StringContent(fileName),"fileName");
                     var response = await httpClient.PostAsync(storageServerUrl, content);
                     response.EnsureSuccessStatusCode();
                 }
