@@ -28,7 +28,6 @@ namespace ServerHangfire.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateReport([FromBody] ReportRequest request)
         {
-            // Validaciones básicas que se hacen antes de realizar la tarea en background
             if (request == null) return BadRequest("Request body is required.");
             if (request.CustomerId <= 0) return BadRequest("CustomerId inválido.");
             if (request.StartDate >= request.EndDate) return BadRequest("Rango de fechas inválido.");
@@ -37,30 +36,43 @@ namespace ServerHangfire.Controllers
                 request.CorrelationId = Guid.NewGuid().ToString();
 
             var now = DateTime.UtcNow;
-            var logMessage = $"Solicitud recibida: CorrelationId={request.CorrelationId}, CustomerId={request.CustomerId}, Rango={request.StartDate:O} - {request.EndDate:O}, Hora={now:O}";
-            _logger.LogInformation(logMessage);
-            await _kafka.SendLogAsync(logMessage);
+            var logMsg = $"Solicitud recibida: CorrelationId={request.CorrelationId}, CustomerId={request.CustomerId}, Rango={request.StartDate:O} - {request.EndDate:O}, Hora={now:O}";
+            _logger.LogInformation(logMsg);
 
-            // Delay configurable (default 5 min)
+            await _kafka.SendLogAsync(new LogEvent
+            {
+                CorrelationId = request.CorrelationId,
+                Endpoint = "Reports/CreateReport",
+                Message = "Solicitud recibida correctamente.",
+                Success = true
+            });
+
             int delay = _configuration.GetValue<int?>("Hangfire:DelayMinutes") ?? 5;
 
-            // Programar la tarea que invocará el ReportService.CallPdfApi(request)
             _backgroundJobs.Schedule<IReportService>(
                 service => service.CallPdfApi(request),
                 TimeSpan.FromMinutes(delay)
             );
 
-            return Ok(new { Message = "Solicitud recibida y encolada.", CorrelationId = request.CorrelationId, DelayMinutes = delay });
+            return Ok(new
+            {
+                Message = "Solicitud recibida y encolada.",
+                CorrelationId = request.CorrelationId,
+                DelayMinutes = delay
+            });
         }
 
-        // Endpoint de prueba simple ( esto es solo para pruebas, no es parte del flujo real)
-        //se puede quitar luego
         [HttpPost("generate")]
         public async Task<IActionResult> Generate([FromBody] ReportRequest request)
         {
-            var msg = $"Generate endpoint invoked: CorrelationId={request.CorrelationId}, CustomerId={request.CustomerId}";
-            _logger.LogInformation(msg);
-            await _kafka.SendLogAsync(msg);
+            _logger.LogInformation($"Generate endpoint invoked: CorrelationId={request.CorrelationId}, CustomerId={request.CustomerId}");
+            await _kafka.SendLogAsync(new LogEvent
+            {
+                CorrelationId = request.CorrelationId,
+                Endpoint = "Reports/generate",
+                Message = "Generate endpoint invocado (simulado).",
+                Success = true
+            });
 
             return Ok(new { Message = "Generate endpoint recibido (simulado)." });
         }

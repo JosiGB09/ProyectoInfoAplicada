@@ -1,4 +1,5 @@
-﻿
+﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using ServerHangfire.Models;
 
 namespace ServerHangfire.Services
@@ -15,7 +16,10 @@ namespace ServerHangfire.Services
         private readonly KafkaProducerService _kafka;
         private readonly IConfiguration _configuration;
 
-        public ReportService(IHttpClientFactory httpFactory, ILogger<ReportService> logger, KafkaProducerService kafka, IConfiguration configuration)
+        public ReportService(IHttpClientFactory httpFactory,
+                             ILogger<ReportService> logger,
+                             KafkaProducerService kafka,
+                             IConfiguration configuration)
         {
             _httpFactory = httpFactory;
             _logger = logger;
@@ -27,41 +31,43 @@ namespace ServerHangfire.Services
         {
             try
             {
-                //Obtener la URL base del PDFServer
-                var PDFServerBaseUrl = _configuration["PDFServer:BaseUrl"];
-                var pdfApiUrl = $"{PDFServerBaseUrl}/api/PDFReports/GenerateReport";
+                var baseUrl = _configuration["PDFServer:BaseUrl"];
+                var pdfApiUrl = $"{baseUrl}/api/PDFReports/GenerateReport";
 
                 var client = _httpFactory.CreateClient();
-              
                 var response = await client.PostAsJsonAsync(pdfApiUrl, request);
 
-                var log = $"CallPdfApi: CorrelationId={request.CorrelationId}, Status={response.StatusCode}, Time={DateTime.UtcNow}";
-                _logger.LogInformation(log);
-                await _kafka.SendLogAsync(log);
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = request.CorrelationId,
+                    Endpoint = "ReportService/CallPdfApi",
+                    Message = $"PDF API respondió con estado {response.StatusCode}",
+                    Success = response.IsSuccessStatusCode
+                });
 
-                if (response.IsSuccessStatusCode)
+                if (!response.IsSuccessStatusCode)
                 {
-                    //Éxito
-                    var successLog = $"PDF API respondió exitosamente: CorrelationId={request.CorrelationId}";
-                    _logger.LogInformation(successLog);
-                    await _kafka.SendLogAsync(successLog);
-                }
-                else
-                {
-                    //Error
                     var errorContent = await response.Content.ReadAsStringAsync();
-                    var errorLog = $"PDF API falló: CorrelationId={request.CorrelationId}, Status={response.StatusCode}, Error={errorContent}";
-                    _logger.LogError(errorLog);
-                    await _kafka.SendLogAsync(errorLog);
+                    await _kafka.SendLogAsync(new LogEvent
+                    {
+                        CorrelationId = request.CorrelationId,
+                        Endpoint = "ReportService/CallPdfApi",
+                        Message = $"PDF API falló: {errorContent}",
+                        Success = false
+                    });
                 }
             }
             catch (Exception ex)
             {
-                var log = $"CallPdfApi-Failed: CorrelationId={request.CorrelationId}, Error={ex.Message}";
-                _logger.LogError(ex, log);
-                await _kafka.SendLogAsync(log);
+                _logger.LogError(ex, "Error en CallPdfApi");
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = request.CorrelationId,
+                    Endpoint = "ReportService/CallPdfApi",
+                    Message = $"Excepción: {ex.Message}",
+                    Success = false
+                });
             }
         }
     }
 }
-

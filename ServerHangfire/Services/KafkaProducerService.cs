@@ -1,41 +1,57 @@
 ﻿using Confluent.Kafka;
+using Microsoft.Extensions.Configuration;
+using ServerHangfire.Models;
+using System.Text.Json;
 
 namespace ServerHangfire.Services
 {
     public class KafkaProducerService
-    //esto es lo que dijo el profe que debiamos agregar (la clase prevista del productor)
     {
-        private readonly string? _bootstrap;
-        private readonly string _topic = "logs";
         private readonly IProducer<Null, string>? _producer;
+        private readonly string _topic;
+        private readonly string? _bootstrap;
 
         public KafkaProducerService(IConfiguration config)
         {
             _bootstrap = config["Kafka:BootstrapServers"];
+            _topic = "logs-hangfire";
+
             if (!string.IsNullOrEmpty(_bootstrap))
             {
-                var conf = new ProducerConfig { BootstrapServers = _bootstrap };
+                var conf = new ProducerConfig
+                {
+                    BootstrapServers = _bootstrap,
+                    Acks = Acks.All,
+                    MessageTimeoutMs = 5000
+                };
+
                 _producer = new ProducerBuilder<Null, string>(conf).Build();
+                Console.WriteLine($"[Kafka] Productor inicializado: {_bootstrap}, tópico {_topic}");
+            }
+            else
+            {
+                Console.WriteLine("[Kafka] Sin configuración.");
             }
         }
 
-        public async Task SendLogAsync(string message)
+        public async Task SendLogAsync(LogEvent log)
         {
+            string json = JsonSerializer.Serialize(log);
+
             if (_producer == null)
             {
-                // Kafka no configurado: fallback: escribir en consola y retornar
-                Console.WriteLine("[Kafka-Fallback] " + message);
+                Console.WriteLine("[Kafka-Fallback] " + json);
                 return;
             }
 
             try
             {
-                var dr = await _producer.ProduceAsync(_topic, new Message<Null, string> { Value = message });
-                Console.WriteLine($"[Kafka] Mensaje enviado a {_topic} (offset {dr.Offset})");
+                var result = await _producer.ProduceAsync(_topic, new Message<Null, string> { Value = json });
+                Console.WriteLine($"[Kafka]  Enviado {_topic} (Offset {result.Offset})");
             }
             catch (Exception ex)
             {
-                Console.WriteLine("[Kafka-Error] " + ex.Message);
+                Console.WriteLine($"[Kafka]  Error: {ex.Message}");
             }
         }
     }
