@@ -1,6 +1,8 @@
 ﻿using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using PDFServer.Models;
+using PDFServer.Services;
+using System.Threading.Tasks;
 
 namespace PDFServer.Services
 {
@@ -57,7 +59,22 @@ namespace PDFServer.Services
             });
 
             document.GeneratePdf(filePath);
+            await CreateLog(correlationId,fileName);
             return filePath;
+        }
+        public async Task CreateLog(string correlationId, string fileName)
+        {
+            var kafkaService = new KafkaProducerService("localhost:9092");
+            await kafkaService.SendLogAsync(new LogEvent
+            {
+                CorrelationId = correlationId,
+                Service = "PDF Server",
+                Endpoint = "/api/pdf/GenerateReport",
+                FileName = fileName,
+                Success = true,
+            });
+
+            
         }
     }
 }
