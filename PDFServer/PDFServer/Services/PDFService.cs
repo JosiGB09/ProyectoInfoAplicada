@@ -9,11 +9,12 @@ namespace PDFServer.Services
     public class PDFService
     {
         private readonly DatabaseService _databaseService;
+        private string storageServerUrl = "http://127.0.0.1:8000/api/storage/upload"; // URL del servicio de almacenamiento
         public PDFService(DatabaseService databaseService)
         {
             _databaseService = databaseService;
         }
-        public async Task<string> GenerateReportAsync(int customerId, string correlationId, DateTime startDate, DateTime endDate)
+        public async Task<Document> GenerateReportAsync(int customerId, string correlationId, DateTime startDate, DateTime endDate)
         {
             List<SalesOrderHeader> orders = await _databaseService.GetSalesOrdersAsync(customerId, startDate, endDate);
 
@@ -59,8 +60,17 @@ namespace PDFServer.Services
             });
 
             document.GeneratePdf(filePath);
-            await CreateLog(correlationId,fileName);
-            return filePath;
+            await CreateLog(correlationId, fileName);
+            try
+            {
+                await UploadToStorageAsync(document, fileName);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Error al subir el archivo a almacenamiento: {ex.Message}");
+                
+            }
+            return document;
         }
         public async Task CreateLog(string correlationId, string fileName)
         {
@@ -74,7 +84,23 @@ namespace PDFServer.Services
                 Success = true,
             });
 
-            
+        }
+        public async Task UploadToStorageAsync(Document pdfFile, string fileName)
+        {
+            using (var memoryStream = new MemoryStream())
+            {
+                pdfFile.GeneratePdf(memoryStream);
+                memoryStream.Position = 0;
+                using (var httpClient = new HttpClient())
+                {
+                    var content = new MultipartFormDataContent();
+                    var fileContent = new StreamContent(memoryStream);
+                    fileContent.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("application/pdf");
+                    content.Add(fileContent, "file", fileName);
+                    var response = await httpClient.PostAsync(storageServerUrl, content);
+                    response.EnsureSuccessStatusCode();
+                }
+            }
         }
     }
 }
