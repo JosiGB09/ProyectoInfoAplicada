@@ -33,7 +33,7 @@ async def upload_file(
         os.makedirs(folder_path, exist_ok=True)
         file_path = os.path.join(folder_path, fileName)
 
-        # Guardar el archivo físicamente
+        # Guardar el archivo fï¿½sicamente
         with open(file_path, "wb") as f:
             f.write(content)
 
@@ -44,6 +44,7 @@ async def upload_file(
             endpoint="/api/storage/upload",
             payload=f"Archivo {fileName} almacenado correctamente",
             fileName=fileName,
+            generation=generationDate,
             success=True
         )
 
@@ -57,7 +58,7 @@ async def upload_file(
         }
 
     except Exception as e:
-        # En caso de error, también se registra en Kafka
+        # En caso de error, tambiï¿½n se registra en Kafka
         log = LogEvent(
             correlationId=correlationId,
             service="StorageServer",
@@ -84,7 +85,7 @@ async def get_file(correlationId: str):
                     with open(file_path, "rb") as f:
                         encoded_pdf = base64.b64encode(f.read()).decode("utf-8")
 
-                    # Crear y enviar log de recuperación
+                    # Crear y enviar log de recuperaciï¿½n
                     log = LogEvent(
                         correlationId=correlationId,
                         service="StorageServer",
@@ -101,7 +102,7 @@ async def get_file(correlationId: str):
                         "pdfData": encoded_pdf
                     }
 
-        # Si no se encontró, registrar error
+        # Si no se encontrï¿½, registrar error
         log = LogEvent(
             correlationId=correlationId,
             service="StorageServer",
