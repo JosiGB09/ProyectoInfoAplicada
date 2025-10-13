@@ -2,13 +2,20 @@ import os
 from datetime import datetime
 from fastapi import UploadFile
 from pathlib import Path
+import base64
 
 STORAGE_ROOT = Path("storage")
 
-def save_file(file: UploadFile, metadata) -> str:
+async def save_file(file: UploadFile, metadata) -> str:
     """
     Guarda un archivo PDF en una carpeta organizada por fecha (YYYY-MM-DD)
     """
+    # Leer contenido
+    content = await file.read()
+
+    # Serializar
+    encoded_pdf = base64.b64encode(content).decode("utf-8")
+
     # Crear carpeta por fecha
     folder_date = metadata.generationDate.strftime("%Y-%m-%d")
     folder_path = STORAGE_ROOT / folder_date
@@ -19,19 +26,17 @@ def save_file(file: UploadFile, metadata) -> str:
 
     # Guardar archivo
     with open(file_path, "wb") as buffer:
-        buffer.write(file.file.read())
+        buffer.write(content)
 
     return str(file_path)
 
-def get_file_path_by_correlationId(correlation_id: int):
+def get_file_path_by_correlationId(correlation_id: str):
     """
     Busca archivo empezando por las fechas más recientes
     """
-    storage_path = Path("storage")
-    
     # Obtener carpetas ordenadas por fecha (más reciente primero)
-    if storage_path.exists():
-        date_folders = sorted([d for d in storage_path.iterdir() if d.is_dir()], reverse=True)
+    if STORAGE_ROOT.exists():
+        date_folders = sorted([d for d in STORAGE_ROOT.iterdir() if d.is_dir()], reverse=True)
         
         for folder in date_folders:
             for file_path in folder.iterdir():

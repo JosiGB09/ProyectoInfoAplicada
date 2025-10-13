@@ -15,10 +15,10 @@ class KafkaProducerService:
 
     def send_log(self, log_data: dict):
         """
-        Envia un mensaje JSON al topico de Kafka de forma asincrona.
+        Envia un mensaje JSON al topico de Kafka de forma asincronica.
         """
         try:
-            json_message = json.dumps(log_data)
+            json_message = json.dumps(log_data, default=str)
             # Se envia sin bloquear
             self.producer.produce(
                 self.topic,
@@ -27,6 +27,6 @@ class KafkaProducerService:
                 callback=self.delivery_report
             )
             # Procesa eventos del productor sin bloquear
-            self.producer.poll(0)
+            self.producer.poll(1)
         except Exception as e:
             print(f"Error al enviar el log a Kafka: {e}")

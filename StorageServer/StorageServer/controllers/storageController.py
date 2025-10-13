@@ -3,12 +3,11 @@ from datetime import datetime
 from models.storageFile import FileMetadata
 from models.logEvent import LogEvent
 from services.kafkaProducerService import KafkaProducerService
+from services.storageService import save_file, get_file_path_by_correlationId
 import base64, os
 
 router = APIRouter()
 kafka_service = KafkaProducerService()
-
-STORAGE_DIR = "./storage"
 
 @router.post("/upload")
 async def upload_file(
@@ -21,30 +20,23 @@ async def upload_file(
     """
     Recibe un archivo PDF, lo serializa, lo guarda en disco y envia un log a Kafka.
     """
+    metadata = FileMetadata(
+        correlationId=correlationId,
+        clientId=clientId,
+        generationDate=generationDate,
+        fileName=fileName
+    )
+    
     try:
-        # Leer el contenido binario del archivo
-        content = await file.read()
-
-        # Serializar (para transporte o registro)
-        encoded_pdf = base64.b64encode(content).decode("utf-8")
-
-        # Crear carpeta por fecha (YYYY-MM-DD)
-        folder_path = os.path.join(STORAGE_DIR, generationDate.strftime("%Y-%m-%d"))
-        os.makedirs(folder_path, exist_ok=True)
-        file_path = os.path.join(folder_path, fileName)
-
-        # Guardar el archivo f�sicamente
-        with open(file_path, "wb") as f:
-            f.write(content)
+        file_path = await save_file(file, metadata)
 
         # Crear el objeto de log
         log = LogEvent(
-            correlationId=correlationId,
+            correlationId=metadata.correlationId,
             service="StorageServer",
             endpoint="/api/storage/upload",
-            payload=f"Archivo {fileName} almacenado correctamente",
-            fileName=fileName,
-            generation=generationDate,
+            payload=f"Archivo {metadata.fileName} almacenado correctamente",
+            fileName=metadata.fileName,
             success=True
         )
 
@@ -53,18 +45,17 @@ async def upload_file(
 
         return {
             "message": "Archivo almacenado y log enviado a Kafka correctamente",
-            "correlationId": correlationId,
-            "encodedLength": len(encoded_pdf)
+            "correlationId": metadata.correlationId
         }
 
     except Exception as e:
-        # En caso de error, tambi�n se registra en Kafka
+        # En caso de error, tambien se registra en Kafka
         log = LogEvent(
-            correlationId=correlationId,
+            correlationId=metadata.correlationId,
             service="StorageServer",
             endpoint="/api/storage/upload",
             payload=f"Error: {str(e)}",
-            fileName=fileName,
+            fileName=metadata.fileName,
             success=False
         )
         kafka_service.send_log(log.dict())
@@ -78,31 +69,32 @@ async def get_file(correlationId: str):
     Tambien envia un log a Kafka.
     """
     try:
-        for root, _, files in os.walk(STORAGE_DIR):
-            for file in files:
-                if correlationId in file:
-                    file_path = os.path.join(root, file)
-                    with open(file_path, "rb") as f:
-                        encoded_pdf = base64.b64encode(f.read()).decode("utf-8")
+        file_path = get_file_path_by_correlationId(correlationId)
 
-                    # Crear y enviar log de recuperaci�n
-                    log = LogEvent(
-                        correlationId=correlationId,
-                        service="StorageServer",
-                        endpoint="/api/storage/file",
-                        payload=f"Archivo {file} recuperado correctamente",
-                        fileName=file,
-                        success=True
-                    )
-                    kafka_service.send_log(log.dict())
+        if file_path:
+            with open(file_path, "rb") as f:
+                encoded_pdf = base64.b64encode(f.read()).decode("utf-8")
 
-                    return {
-                        "correlationId": correlationId,
-                        "fileName": file,
-                        "pdfData": encoded_pdf
-                    }
+            file_name = os.path.basename(file_path)
 
-        # Si no se encontr�, registrar error
+            # Crear y enviar log de recuperacion
+            log = LogEvent(
+                correlationId=correlationId,
+                service="StorageServer",
+                endpoint="/api/storage/file",
+                payload=f"Archivo {file_name} recuperado correctamente",
+                fileName=file_name,
+                success=True
+            )
+            kafka_service.send_log(log.dict())
+
+            return {
+                "correlationId": correlationId,
+                "fileName": file_name,
+                "pdfData": encoded_pdf
+            }
+
+        # Si no se encontro, registrar error
         log = LogEvent(
             correlationId=correlationId,
             service="StorageServer",
