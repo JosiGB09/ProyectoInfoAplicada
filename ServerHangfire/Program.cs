@@ -34,6 +34,7 @@ builder.Services.AddSwaggerGen();
 // Servicios propios
 builder.Services.AddSingleton<KafkaProducerService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ReportHandlerService>();
 
 var app = builder.Build();
 
