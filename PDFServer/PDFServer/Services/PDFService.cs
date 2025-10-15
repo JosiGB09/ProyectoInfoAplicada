@@ -31,31 +31,56 @@ namespace PDFServer.Services
                 container.Page(page =>
                 {
                     page.Margin(40);
+                    page.Background("#F5F7FA");
 
-                    page.Header().Text($"Reporte - Cliente {customerId}").FontSize(20).SemiBold().AlignCenter();
-
-                    page.Content().Table(table =>
+                    page.Header().Element(header =>
                     {
-                        table.ColumnsDefinition(c =>
+                        header.Row(row =>
                         {
-                            c.ConstantColumn(100);
-                            c.RelativeColumn();
-                            c.RelativeColumn();
+                            row.RelativeItem().Column(col =>
+                            {
+                                col.Item().Text("Reporte de Ventas").FontSize(28).Bold().FontColor("#2E86C1").AlignCenter();
+                                col.Item().Text($"Cliente: {customerId}").FontSize(14).FontColor("#34495E").AlignCenter();
+                                col.Item().Text($"Periodo: {startDate:yyyy-MM-dd} a {endDate:yyyy-MM-dd}").FontSize(12).FontColor("#566573").AlignCenter();
+                            });
                         });
-                        table.Header(header =>
-                        {
-                            header.Cell().Text("Pedido").SemiBold();
-                            header.Cell().Text("Fecha");
-                            header.Cell().Text("Total").AlignRight();
-                        });
-                        foreach (var order in orders)
-                        {
-                            table.Cell().Text(order.SalesOrderID.ToString());
-                            table.Cell().Text(order.OrderDate.ToString("yyyy-MM-dd"));
-                            table.Cell().Text(order.TotalDue.ToString("C")).AlignRight();
-                        }
                     });
-                    page.Footer().AlignRight().Text($"Fecha de creación: {DateTime.Now}");
+
+                    page.Content().PaddingVertical(20).Element(content =>
+                    {
+                        content.Table(table =>
+                        {
+                            table.ColumnsDefinition(c =>
+                            {
+                                c.ConstantColumn(100);
+                                c.RelativeColumn();
+                                c.RelativeColumn();
+                            });
+                            table.Header(header =>
+                            {
+                                header.Cell().Background("#2E86C1").Element(cell => cell.Padding(5).Text("Pedido").FontColor("#FFFFFF").FontSize(12).Bold());
+                                header.Cell().Background("#2E86C1").Element(cell => cell.Padding(5).Text("Fecha").FontColor("#FFFFFF").FontSize(12).Bold());
+                                header.Cell().Background("#2E86C1").Element(cell => cell.Padding(5).Text("Total").FontColor("#FFFFFF").FontSize(12).Bold().AlignRight());
+                            });
+                            int rowIndex = 0;
+                            foreach (var order in orders)
+                            {
+                                var bgColor = rowIndex % 2 == 0 ? "#EBF5FB" : "#D6EAF8";
+                                table.Cell().Background(bgColor).Element(cell => cell.Padding(5).Text(order.SalesOrderID.ToString()).FontSize(11));
+                                table.Cell().Background(bgColor).Element(cell => cell.Padding(5).Text(order.OrderDate.ToString("yyyy-MM-dd")).FontSize(11));
+                                table.Cell().Background(bgColor).Element(cell => cell.Padding(5).Text(order.TotalDue.ToString("C")).FontSize(11).AlignRight());
+                                rowIndex++;
+                            }
+                        });
+                    });
+
+                    page.Footer().Element(footer =>
+                    {
+                        footer.Row(row =>
+                        {
+                            row.RelativeItem().Text($"Fecha de creación: {DateTime.Now:dd/MM/yyyy HH:mm}").FontSize(10).FontColor("#7B7D7D").AlignRight();
+                        });
+                    });
                 });
             });
 
