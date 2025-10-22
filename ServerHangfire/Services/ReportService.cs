@@ -1,12 +1,15 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using ServerHangfire.Models;
+using System.Net.Http.Json;
 
 namespace ServerHangfire.Services
 {
     public interface IReportService
     {
         Task CallPdfApi(ReportRequest request);
+        Task SendEmailNotification(ReportRequest request);
+        Task SendMessagingNotification(ReportRequest request);
     }
 
     public class ReportService : IReportService
@@ -35,6 +38,8 @@ namespace ServerHangfire.Services
                 var pdfApiUrl = $"{baseUrl}/api/PDFReports/GenerateReport";
 
                 var client = _httpFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("X-Correlation-ID", request.CorrelationId);
+
                 var response = await client.PostAsJsonAsync(pdfApiUrl, request);
 
                 await _kafka.SendLogAsync(new LogEvent
@@ -55,7 +60,28 @@ namespace ServerHangfire.Services
                         Message = $"PDF API falló: {errorContent}",
                         Success = false
                     });
+                    return;
                 }
+
+                var delaySeconds = _configuration.GetValue<int?>("Hangfire:NotificationDelaySeconds") ?? 60;
+
+                BackgroundJob.Schedule<IReportService>(
+                    svc => svc.SendEmailNotification(request),
+                    TimeSpan.FromSeconds(delaySeconds)
+                );
+
+                BackgroundJob.Schedule<IReportService>(
+                    svc => svc.SendMessagingNotification(request),
+                    TimeSpan.FromSeconds(delaySeconds)
+                );
+
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = request.CorrelationId,
+                    Endpoint = "ReportService/CallPdfApi",
+                    Message = $"Tareas de notificación encoladas con retraso de {delaySeconds}s.",
+                    Success = true
+                });
             }
             catch (Exception ex)
             {
@@ -69,5 +95,85 @@ namespace ServerHangfire.Services
                 });
             }
         }
+
+        public async Task SendEmailNotification(ReportRequest request)
+        {
+            try
+            {
+                var baseUrl = _configuration["EmailServer:BaseUrl"];
+                var emailApiUrl = $"{baseUrl}/api/email/send";
+
+                var client = _httpFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("X-Correlation-ID", request.CorrelationId);
+
+                var payload = new
+                {
+                    To = "cliente@empresa.com",
+                    Subject = "Reporte disponible",
+                    Body = "Tu reporte PDF ha sido generado exitosamente.",
+                    CorrelationId = request.CorrelationId
+                };
+
+                var response = await client.PostAsJsonAsync(emailApiUrl, payload);
+
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = request.CorrelationId,
+                    Endpoint = "ReportService/SendEmailNotification",
+                    Message = $"Email Server respondió con {response.StatusCode}",
+                    Success = response.IsSuccessStatusCode
+                });
+            }
+            catch (Exception ex)
+            {
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = request.CorrelationId,
+                    Endpoint = "ReportService/SendEmailNotification",
+                    Message = $"Error enviando email: {ex.Message}",
+                    Success = false
+                });
+            }
+        }
+
+        public async Task SendMessagingNotification(ReportRequest request)
+        {
+            try
+            {
+                var baseUrl = _configuration["MessagingServer:BaseUrl"];
+                var msgApiUrl = $"{baseUrl}/api/messaging/send";
+
+                var client = _httpFactory.CreateClient();
+                client.DefaultRequestHeaders.Add("X-Correlation-ID", request.CorrelationId);
+
+                var payload = new
+                {
+                    Recipient = "usuario_chat_id_123",
+                    Message = "Tu reporte PDF ya está disponible para descarga.",
+                    CorrelationId = request.CorrelationId
+                };
+
+                var response = await client.PostAsJsonAsync(msgApiUrl, payload);
+
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = request.CorrelationId,
+                    Endpoint = "ReportService/SendMessagingNotification",
+                    Message = $"Messaging Server respondió con {response.StatusCode}",
+                    Success = response.IsSuccessStatusCode
+                });
+            }
+            catch (Exception ex)
+            {
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = request.CorrelationId,
+                    Endpoint = "ReportService/SendMessagingNotification",
+                    Message = $"Error enviando mensaje: {ex.Message}",
+                    Success = false
+                });
+            }
+        }
     }
 }
+
