@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using PDFServer.Models;
 using PDFServer.Services;
 using System.Threading.Tasks;
+using System.Text.Json;
+using System.Text;
 
 namespace PDFServer.Controllers
 {
@@ -11,9 +13,11 @@ namespace PDFServer.Controllers
     public class PDFReportsController : ControllerBase
     {
         private readonly PDFService _pdfService;
-        public PDFReportsController(PDFService pdfService)
+        private readonly IHttpClientFactory _httpClientFactory;
+        public PDFReportsController(PDFService pdfService, IHttpClientFactory httpClientFactory)
         {
             _pdfService = pdfService;
+            _httpClientFactory = httpClientFactory;
         }
         [HttpPost("GenerateReport")]
         public async Task<IActionResult> GenerateReport([FromBody] ReportRequest request)
@@ -22,7 +26,8 @@ namespace PDFServer.Controllers
             try
             {
                 await _pdfService.GenerateReportAsync(request.CustomerId, request.CorrelationId, request.StartDate, request.EndDate);
-                return Ok(new { Message = "Reporte generado exitosamente." });
+                await ScheduleNotificationTasks(request.CorrelationId, request);
+                return Ok(new { Message = "Reporte generado exitosamente y tareas solicitdas" });
             }
             catch (Exception exception)
             {
@@ -30,5 +35,20 @@ namespace PDFServer.Controllers
                 return StatusCode(500, new { Message = "Error al generar el reporte.", Details = exception.Message });
             }
         }
+        private async Task ScheduleNotificationTasks(string correlationId, ReportRequest request)
+        {
+            var client = _httpClientFactory.CreateClient();
+            string hangfireUrl = "https://localhost:7036/api/Reports";
+
+            var payload = new
+            {
+                mensaje = "Su reporte PDF ha sido generado exitosamente.",
+                correlationId = correlationId
+            };
+            var json=new StringContent(JsonSerializer.Serialize(payload),Encoding.UTF8, "application/json");
+
+            await client.PostAsync($"{hangfireUrl}/pdf-callback", json);
+        }
+        
     }
 }
