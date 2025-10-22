@@ -137,7 +137,7 @@ namespace ServerHangfire.Services
 
                 var payload = new
                 {
-                    Recipient = "usuario_chat_id_123",
+                    Recipient = "1430430727102660683",
                     Message = "Tu reporte PDF ya está disponible para descarga.",
                     CorrelationId = request.CorrelationId
                 };
