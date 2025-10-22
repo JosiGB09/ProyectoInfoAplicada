@@ -92,7 +92,7 @@ namespace ServerHangfire.Services
                 if (pdfResponse.Mensaje.Trim().Equals("Success", StringComparison.OrdinalIgnoreCase))
                 {
                     int delay = _configuration.GetValue<int?>("Hangfire:DelayMinutes") ?? 1;
-
+                    _logger.LogInformation("Callback realizado con exito");
                     _backgroundJobs.Schedule<IReportService>(
                         service => service.SendEmailNotification(new ReportRequest
                         {
