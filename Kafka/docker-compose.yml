@@ -1,15 +1,32 @@
-version: '3.8'
 services:
   zookeeper:
     image: wurstmeister/zookeeper:latest
+    container_name: zookeeper
     ports:
       - "2181:2181"
 
   kafka:
     image: wurstmeister/kafka:latest
+    container_name: kafka
     ports:
       - "9092:9092"
     environment:
-      KAFKA_ADVERTISED_HOST_NAME: localhost
+      KAFKA_BROKER_ID: 1
       KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
-      KAFKA_CREATE_TOPICS: "logs-hangfire:1:1,logs-pdf:1:1,logs-storage:1:1"
+      KAFKA_LISTENERS: PLAINTEXT://:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_CREATE_TOPICS: "logs-hangfire:1:1,pdf_reports:1:1,logs-storage:1:1"
+    depends_on:
+      - zookeeper
+
+  kafdrop:
+    image: obsidiandynamics/kafdrop:latest
+    container_name: kafdrop
+    ports:
+      - "9000:9000"
+    environment:
+      KAFKA_BROKERCONNECT: "kafka:9092"
+      SERVER_PORT: 9000
+    depends_on:
+      - kafka
