@@ -91,22 +91,22 @@ namespace ServerHangfire.Services
             {
                 if (pdfResponse.Mensaje.Trim().Equals("Success", StringComparison.OrdinalIgnoreCase))
                 {
-                    int delaySeconds = _configuration.GetValue<int?>("Hangfire:NotificationDelaySeconds") ?? 60;
+                    int delay = _configuration.GetValue<int?>("Hangfire:DelayMinutes") ?? 1;
 
                     _backgroundJobs.Schedule<IReportService>(
-                        svc => svc.SendEmailNotification(new ReportRequest
+                        service => service.SendEmailNotification(new ReportRequest
                         {
                             CorrelationId = pdfResponse.CorrelationId
                         }),
-                        TimeSpan.FromSeconds(delaySeconds)
+                        TimeSpan.FromSeconds(delay)
                     );
 
                     _backgroundJobs.Schedule<IReportService>(
-                        svc => svc.SendMessagingNotification(new ReportRequest
+                        service => service.SendMessagingNotification(new ReportRequest
                         {
                             CorrelationId = pdfResponse.CorrelationId
                         }),
-                        TimeSpan.FromSeconds(delaySeconds)
+                        TimeSpan.FromSeconds(delay)
                     );
 
                     _logger.LogInformation($"[PDF Callback] Éxito confirmado. Jobs de notificación encolados (CorrelationId={pdfResponse.CorrelationId}).");

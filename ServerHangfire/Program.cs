@@ -47,8 +47,9 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
     // dashboard de Hangfire (lo meto aca porque se levanta el proyecto en dev)
-    app.UseHangfireDashboard("/hangfire");
+    
 }
+app.UseHangfireDashboard("/hangfire");
 
 app.UseHttpsRedirection();
 
