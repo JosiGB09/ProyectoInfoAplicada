@@ -36,6 +36,7 @@ namespace ServerHangfire.Services
             {
                 var baseUrl = _configuration["PDFServer:BaseUrl"];
                 var pdfApiUrl = $"{baseUrl}/api/PDFReports/GenerateReport";
+                int delaySeconds = _configuration.GetValue<int?>("Hangfire:NotificationDelaySeconds") ?? 45;
 
                 var client = _httpFactory.CreateClient();
                 client.DefaultRequestHeaders.Add("X-Correlation-ID", request.CorrelationId);
