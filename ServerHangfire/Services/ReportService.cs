@@ -63,18 +63,6 @@ namespace ServerHangfire.Services
                     return;
                 }
 
-                var delaySeconds = _configuration.GetValue<int?>("Hangfire:NotificationDelaySeconds") ?? 60;
-
-                BackgroundJob.Schedule<IReportService>(
-                    svc => svc.SendEmailNotification(request),
-                    TimeSpan.FromSeconds(delaySeconds)
-                );
-
-                BackgroundJob.Schedule<IReportService>(
-                    svc => svc.SendMessagingNotification(request),
-                    TimeSpan.FromSeconds(delaySeconds)
-                );
-
                 await _kafka.SendLogAsync(new LogEvent
                 {
                     CorrelationId = request.CorrelationId,

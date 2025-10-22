@@ -31,5 +31,20 @@ namespace ServerHangfire.Controllers
                 DelayMinutes = "Configurado en appsettings.json"
             });
         }
+        [HttpPost("pdf-callback")]
+        public async Task<IActionResult> PdfCallback([FromBody] PdfResponseMessage pdfResponse)
+        {
+            if (pdfResponse == null || string.IsNullOrEmpty(pdfResponse.CorrelationId))
+                return BadRequest("Solicitud inválida o sin CorrelationId.");
+
+            await _reportHandler.HandlePdfResponseAsync(pdfResponse);
+
+            return Ok(new
+            {
+                Message = "Callback recibido.",
+                pdfResponse.CorrelationId
+            });
+        }
+
     }
 }

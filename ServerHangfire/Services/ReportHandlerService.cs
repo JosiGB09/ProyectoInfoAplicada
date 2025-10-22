@@ -84,5 +84,60 @@ namespace ServerHangfire.Services
 
             _logger.LogInformation($"Reporte encolado con un retraso de {delay} minutos (CorrelationId={request.CorrelationId}).");
         }
+        /// Maneja la respuesta del PDF Server (callback)
+        public async Task HandlePdfResponseAsync(PdfResponseMessage pdfResponse)
+        {
+            try
+            {
+                if (pdfResponse.Mensaje.Trim().Equals("Success", StringComparison.OrdinalIgnoreCase))
+                {
+                    int delaySeconds = _configuration.GetValue<int?>("Hangfire:NotificationDelaySeconds") ?? 60;
+
+                    _backgroundJobs.Schedule<IReportService>(
+                        svc => svc.SendEmailNotification(new ReportRequest
+                        {
+                            CorrelationId = pdfResponse.CorrelationId
+                        }),
+                        TimeSpan.FromSeconds(delaySeconds)
+                    );
+
+                    _backgroundJobs.Schedule<IReportService>(
+                        svc => svc.SendMessagingNotification(new ReportRequest
+                        {
+                            CorrelationId = pdfResponse.CorrelationId
+                        }),
+                        TimeSpan.FromSeconds(delaySeconds)
+                    );
+
+                    _logger.LogInformation($"[PDF Callback] Éxito confirmado. Jobs de notificación encolados (CorrelationId={pdfResponse.CorrelationId}).");
+
+                }
+                else
+                {
+                    _logger.LogWarning($"[PDF Callback] PDF falló o mensaje inválido: {pdfResponse.Mensaje} (CorrelationId={pdfResponse.CorrelationId})");
+
+                    await _kafka.SendLogAsync(new LogEvent
+                    {
+                        CorrelationId = pdfResponse.CorrelationId,
+                        Endpoint = "Reports/PdfCallback",
+                        Message = $"PDF Server devolvió mensaje: {pdfResponse.Mensaje}",
+                        Success = false
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error al manejar respuesta del PDF Server.");
+
+                await _kafka.SendLogAsync(new LogEvent
+                {
+                    CorrelationId = pdfResponse.CorrelationId,
+                    Endpoint = "Reports/PdfCallback",
+                    Message = $"Excepción en callback: {ex.Message}",
+                    Success = false
+                });
+            }
+        }
+
     }
 }
