@@ -38,11 +38,11 @@ namespace PDFServer.Controllers
         private async Task ScheduleNotificationTasks(string correlationId, ReportRequest request)
         {
             var client = _httpClientFactory.CreateClient();
-            string hangfireUrl = "https://localhost:7036/api/Reports";
+            string hangfireUrl = "http://localhost:5294/api/reports";
 
             var payload = new
             {
-                mensaje = "Su reporte PDF ha sido generado exitosamente.",
+                mensaje = "Succes",
                 correlationId = correlationId
             };
             var json=new StringContent(JsonSerializer.Serialize(payload),Encoding.UTF8, "application/json");
