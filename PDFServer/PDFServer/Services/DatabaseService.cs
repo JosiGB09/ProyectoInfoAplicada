@@ -46,12 +46,12 @@ namespace PDFServer.Services
                                     TotalDue = reader.GetDecimal(2)
                                 };
                                 orders.Add(order);
-                                Console.WriteLine($"[GetSalesOrdersAsync] Registro: SalesOrderID={order.SalesOrderID}, OrderDate={order.OrderDate:O}, TotalDue={order.TotalDue}");
+                                //Console.WriteLine($"[GetSalesOrdersAsync] Registro: SalesOrderID={order.SalesOrderID}, OrderDate={order.OrderDate:O}, TotalDue={order.TotalDue}");
                             }
                         }
                     }
                 }
-                Console.WriteLine($"[GetSalesOrdersAsync] Total registros encontrados: {orders.Count}");
+                //Console.WriteLine($"[GetSalesOrdersAsync] Total registros encontrados: {orders.Count}");
             }
             catch (SqlException ex)
             {

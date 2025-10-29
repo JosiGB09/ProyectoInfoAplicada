@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 
 export const sendMessage = async ({ correlationId, recipient, platform, message }) => {
-    if (Platform !== 'discord') {
+    if (platform !== 'discord') {
         throw new Error('Plataforma no soportada');
     }
 
@@ -24,6 +24,7 @@ export const sendMessage = async ({ correlationId, recipient, platform, message 
 
     // archivo temporal
     const tempPath = path.join(process.cwd(), `${correlationId}.pdf`);
+
     fs.writeFileSync(tempPath, pdfBuffer);
 
     // Enviar PDF a Discord
@@ -42,12 +43,12 @@ export const sendMessage = async ({ correlationId, recipient, platform, message 
         });
 
         await sendLog({ event: 'mensaje_enviado', correlationId: correlationId, recipient: recipient });
-        fs.unlinkSync(tempPath);
+        try { fs.unlinkSync(tempPath); } catch (e) { /* ignore */ }
         await discordClient.destroy();
         return { success: true };
     } catch (err) {
         await sendLog({ event: 'error_envio_mensaje', correlationId: correlationId, error: err.message });
-        fs.unlinkSync(tempPath);
+        try { fs.unlinkSync(tempPath); } catch (e) { /* ignore */ }
         throw err;
     }
 };

@@ -32,7 +32,7 @@ async def send_email_with_pdf(to_email: str, correlation_id: str, subject: str =
             correlationId=correlation_id,
             fileName="N/A",
         )
-        kafka_service.send_log(log.model_dump())
+        kafka_producer.send_log(log.model_dump())
         
         return False, f"Error al recuperar PDF: {pdf_file_name_or_error}"
 

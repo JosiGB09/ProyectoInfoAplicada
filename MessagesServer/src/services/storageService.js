@@ -4,6 +4,15 @@ dotenv.config();
 
 export const getFileFromStorage = async (correlationId) => {
     const url = `${process.env.STORAGE_SERVER_URL}/${correlationId}`;
-    const response = await axios.get(url, { responseType: 'arraybuffer' });
-    return response.data;// Devuelve el archivo como un buffer
+
+    const response = await axios.get(url, { responseType: 'json' });
+    const data = response.data;
+
+    if (data && typeof data === 'object' && typeof data.pdfData === 'string') {
+        try {
+            return Buffer.from(data.pdfData, 'base64');
+        } catch (err) {
+            throw new Error('Error decodificando pdfData base64: ' + err.message);
+        }
+    }
 };

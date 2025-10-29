@@ -97,10 +97,10 @@ namespace ServerHangfire.Services
 
                 var payload = new
                 {
-                    CorrelationId = request.CorrelationId,
+                    correlationId = request.CorrelationId,
                     to_email = "josiasmg761@gmail.com",
-                    Subject = "Reporte",
-                    Body = "Tu reporte PDF ha sido generado exitosamente.",
+                    subject = "Reporte",
+                    message = "Tu reporte PDF ha sido generado exitosamente.",
                 };
 
                 var response = await client.PostAsJsonAsync(emailApiUrl, payload);

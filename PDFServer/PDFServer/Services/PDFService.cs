@@ -23,7 +23,7 @@ namespace PDFServer.Services
             {
                 Directory.CreateDirectory(folderPath);
             }
-            string fileName = $"Report_{customerId}_{DateTime.Now:HHmmss}.pdf";
+            string fileName = $"Report_{correlationId}.pdf";
             string filePath = Path.Combine(folderPath, fileName);
 
             var document = Document.Create(container =>

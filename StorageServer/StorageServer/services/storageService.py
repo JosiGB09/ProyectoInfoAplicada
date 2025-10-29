@@ -41,7 +41,7 @@ def get_file_path_by_correlationId(correlation_id: str):
         for folder in date_folders:
             for file_path in folder.iterdir():
                 # Busca archivos cuyo nombre empiece con 'Report_{correlation_id}_'
-                if file_path.name.startswith(f"Report_{correlation_id}_"):
+                if file_path.name.startswith(f"Report_{correlation_id}"):
                     return str(file_path)
     
     return None

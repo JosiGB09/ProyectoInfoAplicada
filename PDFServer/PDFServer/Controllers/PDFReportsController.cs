@@ -27,6 +27,7 @@ namespace PDFServer.Controllers
             {
                 await _pdfService.GenerateReportAsync(request.CustomerId, request.CorrelationId, request.StartDate, request.EndDate);
                 await ScheduleNotificationTasks(request.CorrelationId, request);
+                Console.WriteLine("Reporte generado exitosamente y tareas solicitdas");
                 return Ok(new { Message = "Reporte generado exitosamente y tareas solicitdas" });
             }
             catch (Exception exception)
@@ -42,7 +43,7 @@ namespace PDFServer.Controllers
 
             var payload = new
             {
-                mensaje = "Succes",
+                mensaje = "Success",
                 correlationId = correlationId
             };
             var json=new StringContent(JsonSerializer.Serialize(payload),Encoding.UTF8, "application/json");

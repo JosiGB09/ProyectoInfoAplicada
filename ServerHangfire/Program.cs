@@ -27,6 +27,21 @@ builder.Services.AddHangfire(config =>
 );
 builder.Services.AddHangfireServer();
 
+// 1. Registrar política CORS
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowAll",
+        policy =>
+        {
+            policy
+                .WithOrigins() 
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+        });
+});
+
+builder.Services.AddControllers();
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
@@ -53,6 +68,8 @@ app.UseHangfireDashboard("/hangfire");
 
 app.UseHttpsRedirection();
 
+// 2. Activar CORS
+app.UseCors("AllowFrontend");
 
 app.UseAuthorization();
 
