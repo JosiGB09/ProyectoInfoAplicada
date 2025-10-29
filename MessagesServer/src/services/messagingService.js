@@ -5,7 +5,7 @@ import { Client, GatewayIntentBits, Partials } from 'discord.js';
 import fs from 'fs';
 import path from 'path';
 
-export const sendMessage = async ({ CorrelationId, Recipient, Platform, Message }) => {
+export const sendMessage = async ({ correlationId, recipient, platform, message }) => {
     if (Platform !== 'discord') {
         throw new Error('Plataforma no soportada');
     }
@@ -13,17 +13,17 @@ export const sendMessage = async ({ CorrelationId, Recipient, Platform, Message 
     //recuperar pdf 
     let pdfBuffer;
     try {
-        pdfBuffer = await getFileFromStorage(CorrelationId);
+        pdfBuffer = await getFileFromStorage(correlationId);
         if (!pdfBuffer || pdfBuffer.length === 0) {
             throw new Error('Archivo PDF vacío');
         }
     } catch (err) {
-        await sendLog({ event: 'error_recuperando_pdf', correlationId: CorrelationId, error: err.message });
+        await sendLog({ event: 'error_recuperando_pdf', correlationId: correlationId, error: err.message });
         throw err;
     }
 
     // archivo temporal
-    const tempPath = path.join(process.cwd(), `${CorrelationId}.pdf`);
+    const tempPath = path.join(process.cwd(), `${correlationId}.pdf`);
     fs.writeFileSync(tempPath, pdfBuffer);
 
     // Enviar PDF a Discord
@@ -31,22 +31,22 @@ export const sendMessage = async ({ CorrelationId, Recipient, Platform, Message 
         const discordClient = new Client({ intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages, GatewayIntentBits.MessageContent] });
         await discordClient.login(process.env.DISCORD_BOT_TOKEN);
 
-        const channel = await discordClient.channels.fetch(Recipient);
+        const channel = await discordClient.channels.fetch(recipient);
         if (!channel || !channel.isTextBased()) {
             throw new Error('Canal de Discord no válido');
         }
 
         await channel.send({ 
-            content: Message || 'PDF procesado',
+            content: message || 'PDF procesado',
             files: [tempPath]
         });
 
-        await sendLog({ event: 'mensaje_enviado', correlationId: CorrelationId, recipient: Recipient });
+        await sendLog({ event: 'mensaje_enviado', correlationId: correlationId, recipient: recipient });
         fs.unlinkSync(tempPath);
         await discordClient.destroy();
         return { success: true };
     } catch (err) {
-        await sendLog({ event: 'error_envio_mensaje', correlationId: CorrelationId, error: err.message });
+        await sendLog({ event: 'error_envio_mensaje', correlationId: correlationId, error: err.message });
         fs.unlinkSync(tempPath);
         throw err;
     }
