@@ -6,6 +6,7 @@ const router = express.Router();
 
 router.post('/send', async (req, res) => {
     try {
+        console.log('Body recibido:', req.body); 
         const response = await sendMessage(req.body);
         res.status(200).json(response);
         await sendLog({ event: 'mensaje_enviado', details: response });
