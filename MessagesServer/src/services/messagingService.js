@@ -18,7 +18,14 @@ export const sendMessage = async ({ correlationId, recipient, platform, message 
             throw new Error('Archivo PDF vacío');
         }
     } catch (err) {
-        await sendLog({ event: 'error_recuperando_pdf', correlationId: correlationId, error: err.message });
+        await sendLog({  
+            CorrelationId: correlationId,
+            Timestamp: new Date().toISOString(),
+            Service: 'Messaging',
+            Endpoint: 'sendMessage',
+            Payload: 'error_recuperando_pdf',
+            Success: false,
+        });
         throw err;
     }
 
@@ -42,12 +49,26 @@ export const sendMessage = async ({ correlationId, recipient, platform, message 
             files: [tempPath]
         });
 
-        await sendLog({ event: 'mensaje_enviado', correlationId: correlationId, recipient: recipient });
+        await sendLog({ 
+            CorrelationId: correlationId,
+            Timestamp: new Date().toISOString(),
+            Service: 'Messaging',
+            Endpoint: 'sendMessage',
+            Payload: 'mensaje_enviado',
+            Success: true,
+        });
         try { fs.unlinkSync(tempPath); } catch (e) { /* ignore */ }
         await discordClient.destroy();
         return { success: true };
     } catch (err) {
-        await sendLog({ event: 'error_envio_mensaje', correlationId: correlationId, error: err.message });
+        await sendLog({ 
+            CorrelationId: correlationId,
+            Timestamp: new Date().toISOString(),
+            Service: 'Messaging',
+            Endpoint: 'sendMessage',
+            Payload: 'error_envio_mensaje',
+            Success: false,
+        });
         try { fs.unlinkSync(tempPath); } catch (e) { /* ignore */ }
         throw err;
     }
