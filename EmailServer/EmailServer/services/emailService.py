@@ -31,6 +31,7 @@ async def send_email_with_pdf(to_email: str, correlation_id: str, subject: str =
             message="Error al recuperar el PDF desde StorageServer",
             correlationId=correlation_id,
             fileName="N/A",
+            endpoint="/send_email"
         )
         kafka_producer.send_log(log.model_dump())
         
@@ -63,6 +64,8 @@ async def send_email_with_pdf(to_email: str, correlation_id: str, subject: str =
             message="Reporte enviado por correo electronico correctamente",
             correlationId=correlation_id,
             fileName=pdf_file_name_or_error,
+            endpoint="/send_email",
+            service="Email"
         )
         kafka_producer.send_log(log.model_dump())
 
@@ -73,7 +76,9 @@ async def send_email_with_pdf(to_email: str, correlation_id: str, subject: str =
             log = LogEvent(
                 message=f"Error SMTP al enviar correo electronico: {e}",
                 correlationId=correlation_id,
-                fileName=pdf_file_name_or_error
+                fileName=pdf_file_name_or_error,
+                endpoint="/send_email",
+                service="Email"
             )
             kafka_producer.send_log(log.model_dump())
 

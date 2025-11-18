@@ -26,6 +26,8 @@ async def get_pdf_from_storage(correlation_id: str):
                 message="Error al recuperar el PDF desde StorageServer",
                 correlationId=correlation_id,
                 fileName="N/A",
+                endpoint="/get_pdf",
+                service="Email"
             )
             kafka_producer.send_log(log.model_dump())
             
@@ -51,6 +53,8 @@ async def get_pdf_from_storage(correlation_id: str):
                 message="PDF recuperado exitosamente desde StorageServer",
                 correlationId=correlation_id,
                 fileName=file_name,
+                endpoint="/get_pdf",
+                service="Email"
             )
             kafka_producer.send_log(log.model_dump())
 
@@ -61,6 +65,8 @@ async def get_pdf_from_storage(correlation_id: str):
                 message="Error al procesar la respuesta de StorageServer",
                 correlationId=correlation_id,
                 fileName="N/A",
+                endpoint="/get_pdf",
+                service="Email"
             )
             kafka_producer.send_log(log.model_dump())
             
