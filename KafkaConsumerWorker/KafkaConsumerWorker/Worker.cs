@@ -34,7 +34,7 @@ namespace KafkaConsumerWorker
                 {
                     var result = consumer.Consume(stoppingToken);
                     _logger.LogWarning(result.ToString());
-                    var logData = JsonSerializer.Deserialize<LogModel>(result.Message.Value);
+                    var logData = JsonSerializer.Deserialize<LogModel>(result.Message.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive=true});
                     _logger.LogInformation($"Log recibido: {logData?.Service} - {logData?.Endpoint}");
                     await _databaseService.SaveLogToSql(logData);
                 }
