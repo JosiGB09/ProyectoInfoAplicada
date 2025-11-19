@@ -26,7 +26,7 @@ namespace KafkaConsumerWorker
                 EnableAutoCommit = true
             };
             using var consumer = new ConsumerBuilder<Ignore, string>(config).Build();
-            string[] topics = { "logs-hangfire", "logs-storage", "logs-email", "messages_logs", "pdf_reports" };
+            string[] topics = { "logs-hangfire", "logs-storage", "logs-email", "messages_logs", "reports_pdf" };
             consumer.Subscribe(topics);
             while (!stoppingToken.IsCancellationRequested)
             {

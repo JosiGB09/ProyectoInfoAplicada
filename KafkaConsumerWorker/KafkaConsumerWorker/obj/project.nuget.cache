@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "ixo8ICG57qY=",
+  "dgSpecHash": "JsRKPWsuka8=",
   "success": true,
-  "projectFilePath": "C:\\Users\\xfgl_\\source\\repos\\KafkaConsumerWorker\\KafkaConsumerWorker\\KafkaConsumerWorker.csproj",
+  "projectFilePath": "D:\\Documentos\\GitHub\\ProyectoInfoAplicada\\KafkaConsumerWorker\\KafkaConsumerWorker\\KafkaConsumerWorker.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\xfgl_\\.nuget\\packages\\azure.core\\1.47.1\\azure.core.1.47.1.nupkg.sha512",
     "C:\\Users\\xfgl_\\.nuget\\packages\\azure.identity\\1.14.2\\azure.identity.1.14.2.nupkg.sha512",
