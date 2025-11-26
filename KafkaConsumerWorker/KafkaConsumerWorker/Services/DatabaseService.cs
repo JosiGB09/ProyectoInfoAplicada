@@ -58,7 +58,6 @@ namespace KafkaConsumerWorker.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error al comprobar/crear la tabla KafkaLogs.");
-                throw;
             }
         }
 
@@ -103,10 +102,6 @@ namespace KafkaConsumerWorker.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error almacenando log en SQL");
-                _logger.LogInformation("Fecha: "+log.Timestamp.ToString());
-                _logger.LogInformation("Servicio: "+log.Service);
-                _logger.LogInformation("Endpoint: "+log.Endpoint);
-                throw;
             }
         }
     }

@@ -5,19 +5,23 @@ using PDFServer.Services;
 using System.Threading.Tasks;
 using System.Text.Json;
 using System.Text;
+using Microsoft.Extensions.Configuration;
 
 namespace PDFServer.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class PDFReportsController : ControllerBase
+    public class PdfReportsController : ControllerBase
     {
-        private readonly PDFService _pdfService;
+        private readonly PdfService _pdfService;
         private readonly IHttpClientFactory _httpClientFactory;
-        public PDFReportsController(PDFService pdfService, IHttpClientFactory httpClientFactory)
+        private readonly string _hangfireUrl;
+
+        public PdfReportsController(PdfService pdfService, IHttpClientFactory httpClientFactory, IConfiguration configuration)
         {
             _pdfService = pdfService;
             _httpClientFactory = httpClientFactory;
+            _hangfireUrl = configuration.GetValue<string>("URLs:HangfireUrl") ?? throw new ArgumentNullException(nameof(configuration), "La URL de Hangfire no puede ser nula.");
         }
         [HttpPost("GenerateReport")]
         public async Task<IActionResult> GenerateReport([FromBody] ReportRequest request)
@@ -26,7 +30,7 @@ namespace PDFServer.Controllers
             try
             {
                 await _pdfService.GenerateReportAsync(request.CustomerId, request.CorrelationId, request.StartDate, request.EndDate);
-                await ScheduleNotificationTasks(request.CorrelationId, request);
+                await ScheduleNotificationTasks(request.CorrelationId);
                 Console.WriteLine("Reporte generado exitosamente y tareas solicitdas");
                 return Ok(new { Message = "Reporte generado exitosamente y tareas solicitdas" });
             }
@@ -36,10 +40,9 @@ namespace PDFServer.Controllers
                 return StatusCode(500, new { Message = "Error al generar el reporte.", Details = exception.Message });
             }
         }
-        private async Task ScheduleNotificationTasks(string correlationId, ReportRequest request)
+        private async Task ScheduleNotificationTasks(string correlationId)
         {
             var client = _httpClientFactory.CreateClient();
-            string hangfireUrl = "http://localhost:5294/api/reports";
 
             var payload = new
             {
@@ -48,7 +51,7 @@ namespace PDFServer.Controllers
             };
             var json=new StringContent(JsonSerializer.Serialize(payload),Encoding.UTF8, "application/json");
 
-            await client.PostAsync($"{hangfireUrl}/pdf-callback", json);
+            await client.PostAsync($"{_hangfireUrl}/pdf-callback", json);
         }
         
     }

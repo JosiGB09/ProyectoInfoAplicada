@@ -9,7 +9,7 @@ QuestPDF.Settings.License = LicenseType.Community;
 builder.Services.AddControllers();
 // Registro de DatabaseService y PDFService para inyección de dependencias
 builder.Services.AddScoped<PDFServer.Services.DatabaseService>();
-builder.Services.AddScoped<PDFServer.Services.PDFService>();
+builder.Services.AddScoped<PDFServer.Services.PdfService>();
 builder.Services.AddHttpClient();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -36,4 +36,4 @@ app.UseAuthorization();
 
 app.MapControllers();
 
-app.Run();
+await app.RunAsync();

@@ -28,7 +28,10 @@ namespace PDFServer.Services
 
         public async Task SendLogAsync(object log)
         {
-            if (_disposed) throw new ObjectDisposedException(nameof(KafkaProducerService));
+            if (_disposed)
+            {
+                ObjectDisposedException.ThrowIf(_disposed, nameof(KafkaProducerService));
+            }
 
             string json = JsonSerializer.Serialize(log);
 
@@ -49,21 +52,32 @@ namespace PDFServer.Services
             }
         }
 
-        public void Dispose()
+        
+        protected virtual void Dispose(bool disposing)
         {
             if (_disposed) return;
 
-            try
+            if (disposing)
             {
-                _producer.Flush(TimeSpan.FromSeconds(5));
-            }
-            catch (Exception ex)
-            {
-                Console.WriteLine($"[KafkaProducer] Flush error: {ex.Message}");
+                try
+                {
+                    _producer.Flush(TimeSpan.FromSeconds(5));
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"[KafkaProducer] Flush error: {ex.Message}");
+                }
+
+                _producer.Dispose();
             }
 
-            _producer.Dispose();
             _disposed = true;
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
     }
 }

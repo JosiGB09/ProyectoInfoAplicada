@@ -9,6 +9,7 @@ namespace KafkaConsumerWorker
     {
         private readonly ILogger<Worker> _logger;
         private readonly DatabaseService _databaseService;
+        private static readonly JsonSerializerOptions _jsonOptions = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
         public Worker(ILogger<Worker> logger, DatabaseService databaseService)
         {
@@ -33,17 +34,25 @@ namespace KafkaConsumerWorker
                 try
                 {
                     var result = consumer.Consume(stoppingToken);
-                    _logger.LogWarning(result.ToString());
-                    var logData = JsonSerializer.Deserialize<LogModel>(result.Message.Value, new JsonSerializerOptions { PropertyNameCaseInsensitive=true});
-                    _logger.LogInformation($"Log recibido: {logData?.Service} - {logData?.Endpoint}");
-                    await _databaseService.SaveLogToSql(logData);
+                    var logData = JsonSerializer.Deserialize<LogModel>(result.Message.Value, _jsonOptions);
+                    if (logData != null)
+                    {
+                        var logInfo = $"{logData.Service} - {logData.Endpoint}";
+                        _logger.LogInformation("Log recibido: {LogInfo}", logInfo);
+                        await _databaseService.SaveLogToSql(logData);
+                    }
+                    else
+                    {
+                        _logger.LogWarning("Mensaje recibido no se pudo deserializar a LogModel: {Message}", result.Message.Value);
+                    }
                 }
+
                 catch (Exception ex)
                 {
-                    _logger.LogError($"Error al consumir el mensaje: {ex.Message}");
-                }
+                    _logger.LogError(ex, "Error al consumir el mensaje.");
             }
-            //await Task.Delay(60000 * 2, stoppingToken);// Espera de 5 minutos
+            }
+            await Task.Delay(60000 * 2, stoppingToken);// Espera de 2 minutos
         }
     }
 }

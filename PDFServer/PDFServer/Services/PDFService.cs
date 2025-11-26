@@ -3,16 +3,24 @@ using QuestPDF.Infrastructure;
 using PDFServer.Models;
 using PDFServer.Services;
 using System.Threading.Tasks;
+using System;
+using System.IO;
+using Microsoft.Extensions.Configuration;
+using System.Net.Http;
 
 namespace PDFServer.Services
 {
-    public class PDFService
+    public class PdfService
     {
         private readonly DatabaseService _databaseService;
-        private string storageServerUrl = "http://127.0.0.1:8000/api/storage/upload"; // URL del servicio de almacenamiento
-        public PDFService(DatabaseService databaseService)
+        private readonly string storageServerUrl;
+        private const string PrimaryColor = "#2E86C1";
+
+        public PdfService(DatabaseService databaseService, IConfiguration configuration)
         {
             _databaseService = databaseService;
+            storageServerUrl = configuration.GetValue<string>("URLs:StorageServerURL")
+                ?? throw new InvalidOperationException("StorageServerURL no está configurada en appsettings.json");
         }
         public async Task<Document> GenerateReportAsync(int customerId, string correlationId, DateTime startDate, DateTime endDate)
         {
@@ -31,7 +39,7 @@ namespace PDFServer.Services
                 container.Page(page =>
                 {
                     page.Margin(40);
-                    page.Background("#F5F7FA");
+                    page.PageColor("#F5F7FA");
 
                     page.Header().Element(header =>
                     {
@@ -39,7 +47,7 @@ namespace PDFServer.Services
                         {
                             row.RelativeItem().Column(col =>
                             {
-                                col.Item().Text("Reporte de Ventas").FontSize(28).Bold().FontColor("#2E86C1").AlignCenter();
+                                col.Item().Text("Reporte de Ventas").FontSize(28).Bold().FontColor(PrimaryColor).AlignCenter();
                                 col.Item().Text($"Cliente: {customerId}").FontSize(14).FontColor("#34495E").AlignCenter();
                                 col.Item().Text($"Periodo: {startDate:yyyy-MM-dd} a {endDate:yyyy-MM-dd}").FontSize(12).FontColor("#566573").AlignCenter();
                             });
@@ -58,9 +66,9 @@ namespace PDFServer.Services
                             });
                             table.Header(header =>
                             {
-                                header.Cell().Background("#2E86C1").Element(cell => cell.Padding(5).Text("Pedido").FontColor("#FFFFFF").FontSize(12).Bold());
-                                header.Cell().Background("#2E86C1").Element(cell => cell.Padding(5).Text("Fecha").FontColor("#FFFFFF").FontSize(12).Bold());
-                                header.Cell().Background("#2E86C1").Element(cell => cell.Padding(5).Text("Total").FontColor("#FFFFFF").FontSize(12).Bold().AlignRight());
+                                header.Cell().Background(PrimaryColor).Element(cell => cell.Padding(5).Text("Pedido").FontColor("#FFFFFF").FontSize(12).Bold());
+                                header.Cell().Background(PrimaryColor).Element(cell => cell.Padding(5).Text("Fecha").FontColor("#FFFFFF").FontSize(12).Bold());
+                                header.Cell().Background(PrimaryColor).Element(cell => cell.Padding(5).Text("Total").FontColor("#FFFFFF").FontSize(12).Bold().AlignRight());
                             });
                             int rowIndex = 0;
                             foreach (var order in orders)
@@ -93,7 +101,7 @@ namespace PDFServer.Services
             catch (Exception ex)
             {
                 Console.WriteLine($"Error al subir el archivo a almacenamiento: {ex.Message}");
-                
+
             }
             return document;
         }

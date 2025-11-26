@@ -7,7 +7,7 @@ namespace PDFServer.Services
 {
     public class DatabaseService
     {
-        private readonly string stringConnection;
+        private readonly string? stringConnection;
 
         public DatabaseService(IConfiguration configuration)
         {
@@ -46,17 +46,17 @@ namespace PDFServer.Services
                                     TotalDue = reader.GetDecimal(2)
                                 };
                                 orders.Add(order);
-                                //Console.WriteLine($"[GetSalesOrdersAsync] Registro: SalesOrderID={order.SalesOrderID}, OrderDate={order.OrderDate:O}, TotalDue={order.TotalDue}");
+                                
                             }
                         }
                     }
                 }
-                //Console.WriteLine($"[GetSalesOrdersAsync] Total registros encontrados: {orders.Count}");
+                
             }
             catch (SqlException ex)
             {
                 Console.WriteLine($"[GetSalesOrdersAsync] SqlException: {ex.Message}");
-                throw new Exception(ex.Number.ToString(), ex);
+                throw;
             }
             return orders;
         }

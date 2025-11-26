@@ -1,11 +1,14 @@
-﻿namespace PDFServer.Models
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace PDFServer.Models
 {
     public class ReportRequest
     {
-        public int CustomerId { get; set; }
-        public string CorrelationId { get; set; } = string.Empty;
-        public DateTime StartDate { get; set; }
-        public DateTime EndDate { get; set; }
+        public required int CustomerId { get; set; }
+        public required string CorrelationId { get; set; }
+        public required DateTime StartDate { get; set; }
+        public required DateTime EndDate { get; set; }
+
         public ReportRequest() { }
         public ReportRequest(int customerId, string correlationId, DateTime startDate, DateTime endDate)
         {

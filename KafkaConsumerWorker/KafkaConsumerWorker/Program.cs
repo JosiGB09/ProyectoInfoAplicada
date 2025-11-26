@@ -15,4 +15,4 @@ using (var scope = host.Services.CreateScope())
     await dbService.EnsureTableExistsAsync();
 }
 
-host.Run();
+await host.RunAsync();
